@@ -1,4 +1,4 @@
-def tl(features, data_clean, index, lag, n_ahead, n_layer, learning_rate, epochs, batch_size, source_model_path, data_sample):
+def tl(features, data_clean, index, lag, n_ahead, n_layer, epochs, batch_size, source_model_path, data_sample, Xval, Yval):
     """
     A method to create a Multivariate LSTM model with TL using different portions of the data
     """
@@ -18,13 +18,12 @@ def tl(features, data_clean, index, lag, n_ahead, n_layer, learning_rate, epochs
         data_sample = data_clean.iloc[start_index:]
 
         data_clean_s, train_mean_sample, train_std_sample, test_share_sample = scale_data(features, data_sample, index)
-        display(data_clean_s)
         X, Y = create_X_Y(data_clean_s.values, lag=lag, n_ahead=n_ahead)
         n_ft = X.shape[2]
 
         # Spliting into train and test sets 
         Xtrain, Ytrain = X[0:int(X.shape[0] * (1 - test_share_sample))], Y[0:int(X.shape[0] * (1 - test_share_sample))]
-        Xval, Yval = X[int(X.shape[0] * (1 - test_share_sample)):], Y[int(X.shape[0] * (1 - test_share_sample)):]
+        #Xval, Yval = X[int(X.shape[0] * (1 - test_share_sample)):], Y[int(X.shape[0] * (1 - test_share_sample)):]
 
         print(f"Shape of training data: {Xtrain.shape}")
         print(f"Shape of the target data: {Ytrain.shape}")
@@ -76,6 +75,10 @@ def tl(features, data_clean, index, lag, n_ahead, n_layer, learning_rate, epochs
         # Reversed Metrics
         reversed_forecast = forecast * train_std_sample[target_index] + train_mean_sample[target_index]
         reversed_Yval = Yval * train_std_sample[target_index] + train_mean_sample[target_index]
+
+        csv_input = pd.read_csv(f"forecast_{building_name}.csv")
+        csv_input[f'TL_{k}'] = reversed_forecast.flatten()
+        csv_input.to_csv(f"forecast_{building_name}.csv", index=False)
 
         model_name = f'{building_name}_{k}'
         total_training_time = training_time + training_time_ft
